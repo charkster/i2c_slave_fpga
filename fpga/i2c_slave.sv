@@ -99,8 +99,8 @@ module i2c_slave
 
    // it is very important to check when the st_bit_cnt is equal to 8!!!!
    always_ff @(posedge scl, negedge rst_start_stop_n)
-     if (!rst_start_stop_n)                                                 valid_id <= 1'b0;
-     else if (st_id_det && (bit_cnt == 4'd8) && (data_sr[6:0] == SLAVE_ID)) valid_id <= 1'b1; // only clear on start, stop and reset
+      if (!rst_start_stop_n)                                                 valid_id <= 1'b0;
+      else if (st_id_det && (bit_cnt == 4'd8) && (data_sr[6:0] == SLAVE_ID)) valid_id <= 1'b1; // only clear on start, stop and reset
 
    always_ff @(posedge scl, negedge rst_n)
       if (!rst_n)                                                                     data_sr <= 8'b0000_0000;
@@ -112,27 +112,28 @@ module i2c_slave
    //   b) we ACK the receipt of a data byte
    //   b) we are in read mode and outputting data, except during the Master ACK/NACK
    always_ff @(negedge scl, negedge rst_n)
-     if (!rst_n)                                              sda_out <= P_NACK;
-     else if (bit_cnt9 && ((st_id_det && valid_id) || wr_en)) sda_out <= P_ACK;
-     else if (rd_en && (!bit_cnt9))                           sda_out <= data_sr[7];
-     else                                                     sda_out <= P_NACK;
+      if (!rst_n)                                              sda_out <= P_NACK;
+      else if (bit_cnt9 && ((st_id_det && valid_id) || wr_en)) sda_out <= P_ACK;
+      else if (rd_en && (!bit_cnt9))                           sda_out <= data_sr[7];
+      else                                                     sda_out <= P_NACK;
 
-  // THE FOLLOWING CODE IS NOT PART OF THE I2C_SLAVE, but is custom for the regmap
-  // it is convenient to put it here, it assumes a single byte address
-  // auto-incrementing address for multi-byte reads and writes.
+   // THE FOLLOWING CODE IS NOT PART OF THE I2C_SLAVE, but is custom for the regmap
+   // it is convenient to put it here, it assumes a single byte address
+   // auto-incrementing address for multi-byte reads and writes.
 
-  assign wdata_ready = wr_en && bit_cnt9;
+   assign wdata_ready = wr_en && bit_cnt9;
    
    // the first data in a write cycle is the address, all following is write data
    always_ff @(posedge scl, negedge rst_n)
       if (!rst_n)           next_data_is_addr <= 1'b1;
       else if (start)       next_data_is_addr <= 1'b1; // clear when start is seen
       else if (wdata_ready) next_data_is_addr <= 1'b0;
-   
+
+   // this multicycle thing could be simplier, but it works for now
    always_ff @(posedge scl, negedge rst_n)
-      if (!rst_n)                                                    multi_cycle <= 1'b0;
-      else if (start)                                                multi_cycle <= 1'b0;
-      else if (rd_en || (wr_en && bit_cnt9 && (!next_data_is_addr))) multi_cycle <= 1'b1;
+      if (!rst_n)                                              multi_cycle <= 1'b0;
+      else if (start)                                          multi_cycle <= 1'b0;
+      else if (rd_en || (wdata_ready && (!next_data_is_addr))) multi_cycle <= 1'b1;
    
    // this pulse signals that wdata is stable
    always_ff @(posedge scl, negedge rst_n)
