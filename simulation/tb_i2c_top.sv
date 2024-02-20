@@ -2,8 +2,8 @@ module tb_i2c_top ();
 
    parameter EXT_CLK_PERIOD_NS = 100;
    
-   reg         clk;
-   reg         reset;
+   reg clk;
+   reg reset;
 
    initial begin
       clk = 1'b0;
@@ -16,6 +16,7 @@ module tb_i2c_top ();
    //----------
    wire sda;
    wire scl;
+   logic [7:0] i2c_read_data;
 
    pullup(sda);
    pullup(scl);
@@ -28,8 +29,6 @@ module tb_i2c_top ();
      ( .sda       ( sda ), // inout
        .scl       ( scl )  // output
      );
-
-   logic [7:0] i2c_read_data;
 
    initial begin
       #EXT_CLK_PERIOD_NS;
@@ -54,6 +53,5 @@ module tb_i2c_top ();
        .scl	   ( scl   ), // input  
        .sda	   ( sda   )  // inout  
        );
-
 
 endmodule
