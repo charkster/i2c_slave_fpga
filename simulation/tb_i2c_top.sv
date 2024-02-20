@@ -49,10 +49,10 @@ module tb_i2c_top ();
    end
 
    i2c_slave_top u_i2c_slave_top
-     ( .clk,                      // input  
-       .button_0   ( reset     ), // input  
-       .scl	       ( scl       ), // input  
-       .sda	       ( sda       )  // inout  
+     ( .clk,                  // input  
+       .button_0   ( reset ), // input  
+       .scl	   ( scl   ), // input  
+       .sda	   ( sda   )  // inout  
        );
 
 
