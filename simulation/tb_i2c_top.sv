@@ -44,7 +44,7 @@ module tb_i2c_top ();
       u_mstr_i2c.i2c_read (7'h24, 8'h03, i2c_read_data);
       u_mstr_i2c.i2c_write(7'h98, 8'h82, 8'h7A);
       u_mstr_i2c.i2c_read (7'hA3, 8'h03, i2c_read_data);
-	  repeat(10) #EXT_CLK_PERIOD_NS;
+      repeat(10) #EXT_CLK_PERIOD_NS;
       $finish;
    end
 
