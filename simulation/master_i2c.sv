@@ -413,20 +413,6 @@ module master_i2c
       end
    endtask
 
-   task random_clocks;
-      begin
-         scl_from_master <= 1;
-         #(scl_min_time_high/2)
-         scl_from_master <= 0;
-         #(scl_min_time_low/2)
-         scl_from_master <= 0;
-         #(scl_min_time_low/2)
-         scl_from_master <= 1;
-         #(scl_min_time_high/2)
-         scl_from_master <= 1;
-      end
-   endtask
-
    //
    // Routine to send a START condition from master to slave
    //
