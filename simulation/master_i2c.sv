@@ -124,7 +124,7 @@ module master_i2c
       input val;
 
       begin
-         idle_PVT;
+         idle;
          if(val == 1'b1)begin
            do_pull_up_enable;
          end
@@ -183,11 +183,11 @@ module master_i2c
      begin
          random_id  = $random() ;
          hs_mode_id = {5'b0000_1, random_id} ;
-         STA_PVT;
-         AWR_PVT( hs_mode_id);
+         STA;
+         AWR( hs_mode_id);
          //I2C Rev 4 Section 5.3.2 This will give error if no hs-devices (no ACK)
          sending_hs_master_code = 1'b1;
-         SnACK_PVT;
+         SnACK;
          sending_hs_master_code = 1'b0;
          high_speed = 1'b1;
          scl_timing;
@@ -201,9 +201,9 @@ module master_i2c
          if(verbosity > 1)begin
             $sformat(mstr,"Wr DevID %0h",i2c_slave_addr);
          end
-         STA_PVT;
-         AWR_PVT(i2c_slave_addr);
-         SACK_PVT; // should be SNACK once that exists
+         STA;
+         AWR(i2c_slave_addr);
+         SACK; // should be SNACK once that exists
       end
    endtask
 
@@ -215,9 +215,9 @@ module master_i2c
          if(verbosity > 1)begin
             $sformat(mstr,"Wr DevID %0h addr %0h data %0h",dev_addr,reg_addr,data);
          end
-         DWR_PVT(data);
-         SACK_PVT;
-         if (stop) STO_PVT;
+         DWR(data);
+         SACK;
+         if (stop) STO;
        end
     endtask
      
@@ -229,13 +229,13 @@ module master_i2c
          if(verbosity > 1)begin
             $sformat(mstr,"Wr DevID %0h addr %0h data %0h",i2c_slave_addr,addr,data);
          end
-         STA_PVT;
-         AWR_PVT(i2c_slave_addr);
-         SACK_PVT;
-         RAD_PVT(addr);
-         SACK_PVT;
-         DWR_PVT(data);
-         SACK_PVT;
+         STA;
+         AWR(i2c_slave_addr);
+         SACK;
+         RAD(addr);
+         SACK;
+         DWR(data);
+         SACK;
        end
    endtask
      
@@ -245,7 +245,7 @@ module master_i2c
       input [7:0] data;
       begin
          i2c_write_no_stop(i2c_slave_addr, addr, data);
-         STO_PVT;
+         STO;
        end
    endtask
      
@@ -265,7 +265,7 @@ module master_i2c
       input [7:0] data;
       begin
          i2c_hs_write_no_stop(i2c_slave_addr, addr, data);
-         STO_PVT;
+         STO;
        end
    endtask
 
@@ -281,14 +281,14 @@ module master_i2c
          if(verbosity > 1)begin
             $sformat(mstr,"Wr DevID %0h addr %0h data %0h",i2c_slave_addr,addr,data);
          end
-         STA_PVT;
-         AWR_PVT(i2c_slave_addr);
-         SnACK_PVT;
-         RAD_PVT(addr);
-         SnACK_PVT;
-         DWR_PVT(data);
-         SnACK_PVT;
-         STO_PVT;
+         STA;
+         AWR(i2c_slave_addr);
+         SnACK;
+         RAD(addr);
+         SnACK;
+         DWR(data);
+         SnACK;
+         STO;
       end
    endtask // i2c_write
 
@@ -298,15 +298,15 @@ module master_i2c
       output [7:0] data;
       
       begin
-         STA_PVT;
-         AWR_PVT(i2c_slave_addr);
-         SACK_PVT;
-         RAD_PVT(addr);
-         SACK_PVT;
-         STA_PVT;
-         ARD_PVT(i2c_slave_addr);
-         SACK_PVT;
-         DGT_PVT(data);
+         STA;
+         AWR(i2c_slave_addr);
+         SACK;
+         RAD(addr);
+         SACK;
+         STA;
+         ARD(i2c_slave_addr);
+         SACK;
+         DGT(data);
          if(verbosity > 1)begin
             $sformat(mstr,"Rd DevID %0h addr %0h data %0h",i2c_slave_addr,addr,data);
          end
@@ -320,8 +320,8 @@ module master_i2c
       
       begin
          i2c_read_no_stop(i2c_slave_addr, addr, data);
-         MnACK_PVT;
-         STO_PVT;
+         MnACK;
+         STO;
       end
    endtask
 
@@ -333,7 +333,7 @@ module master_i2c
       begin
          i2c_hs_seq;
          i2c_read_no_stop(i2c_slave_addr, addr, data);
-         MACK_PVT;
+         MACK;
       end
    endtask
 
@@ -346,17 +346,17 @@ module master_i2c
       begin
          i2c_hs_seq;
          i2c_read_no_stop(i2c_slave_addr, addr, data);
-         MnACK_PVT;
-         STO_PVT;
+         MnACK;
+         STO;
       end
    endtask
 
    //
    // Routine to put SDA & SCL idle
    //
-   // Usage: idle_PVT;
+   // Usage: idle;
    //
-   task idle_PVT;
+   task idle;
       begin
          instruction       <= "NULL";
          sda_from_master   <= 1;
@@ -369,9 +369,9 @@ module master_i2c
    //
    // Routine to send a data bit from master to slave
    //
-   // Usage: tx_data_bit_PVT(data_bit);
+   // Usage: tx_data_bit(data_bit);
    //
-   task tx_data_bit_PVT;
+   task tx_data_bit;
       input bitt;
       begin
          sda_from_master <= bitt;
@@ -394,9 +394,9 @@ module master_i2c
    //
    // Routine to receive a Data bit at the master
    //
-   // Usage: rx_data_bit_PVT;
+   // Usage: rx_data_bit;
    //
-   task rx_data_bit_PVT;
+   task rx_data_bit;
       begin
          sda_from_master <= 1;
          scl_from_master <= 0;
@@ -413,7 +413,7 @@ module master_i2c
       end
    endtask
 
-   task random_clocks_PVT;
+   task random_clocks;
       begin
          scl_from_master <= 1;
          #(scl_min_time_high/2)
@@ -430,9 +430,9 @@ module master_i2c
    //
    // Routine to send a START condition from master to slave
    //
-   // Usage: STA_PVT;
+   // Usage: STA;
    //
-   task STA_PVT;
+   task STA;
       begin
         fork 
           begin : sda_released
@@ -481,7 +481,7 @@ module master_i2c
    //
    // Usage: STO;
    //
-   task STO_PVT;
+   task STO;
       begin
          instruction     <= "STO ";
          sda_from_master <= 0;
@@ -508,9 +508,9 @@ module master_i2c
    //
    // Routine to send ACK from master to slave
    //
-   // Usage: MACK_PVT
+   // Usage: MACK
    //
-   task MACK_PVT;
+   task MACK;
       begin
          instruction     <= "MACK";
          sda_from_master <= 0;
@@ -531,9 +531,9 @@ module master_i2c
    //
    // Routine to send NACK from master to slave
    //
-   // Usage: MnACK_PVT
+   // Usage: MnACK
    //
-   task MnACK_PVT;
+   task MnACK;
       begin        
          instruction     <= "MnACK";      
          sda_from_master <= 1;           
@@ -554,9 +554,9 @@ module master_i2c
    //
    // Routine for master to wait for ACK from slave
    //
-   // Usage: SACK_PVT
+   // Usage: SACK
    //
-   task SACK_PVT;
+   task SACK;
       begin
          instruction     <= "SACK";
          // Send a 1 on SDA to prove that the slave forces a 0 back
@@ -583,9 +583,9 @@ module master_i2c
    //
    // Routine for master to wait for nACK from slave
    //
-   // Usage: SnACK_PVT
+   // Usage: SnACK
    //
-   task SnACK_PVT;
+   task SnACK;
       begin
          instruction     <= "SnACK";
          // Send a 1 on SDA to prove that the slave forces a 0 back
@@ -613,20 +613,20 @@ module master_i2c
    //
    // Routine to send address from master to slave
    //
-   // Usage: ARD_PVT
+   // Usage: ARD
    //
-   task ARD_PVT;
+   task ARD;
       input [6:0] addr;
       begin
          instruction <= "ARD ";
-         tx_data_bit_PVT(addr[6]);
-         tx_data_bit_PVT(addr[5]);
-         tx_data_bit_PVT(addr[4]);
-         tx_data_bit_PVT(addr[3]);
-         tx_data_bit_PVT(addr[2]);
-         tx_data_bit_PVT(addr[1]);
-         tx_data_bit_PVT(addr[0]);
-         tx_data_bit_PVT(1'b1);
+         tx_data_bit(addr[6]);
+         tx_data_bit(addr[5]);
+         tx_data_bit(addr[4]);
+         tx_data_bit(addr[3]);
+         tx_data_bit(addr[2]);
+         tx_data_bit(addr[1]);
+         tx_data_bit(addr[0]);
+         tx_data_bit(1'b1);
          instruction <= "NULL";
       end
    endtask
@@ -636,18 +636,18 @@ module master_i2c
    //
    // Usage: AWR
    //
-   task AWR_PVT;
+   task AWR;
       input [6:0] addr;
       begin
          instruction <= "AWR ";
-         tx_data_bit_PVT(addr[6]);
-         tx_data_bit_PVT(addr[5]);
-         tx_data_bit_PVT(addr[4]);
-         tx_data_bit_PVT(addr[3]);
-         tx_data_bit_PVT(addr[2]);
-         tx_data_bit_PVT(addr[1]);
-         tx_data_bit_PVT(addr[0]);
-         tx_data_bit_PVT(1'b0);
+         tx_data_bit(addr[6]);
+         tx_data_bit(addr[5]);
+         tx_data_bit(addr[4]);
+         tx_data_bit(addr[3]);
+         tx_data_bit(addr[2]);
+         tx_data_bit(addr[1]);
+         tx_data_bit(addr[0]);
+         tx_data_bit(1'b0);
          instruction <= "NULL";
          dev_addr = addr;
       end
@@ -656,20 +656,20 @@ module master_i2c
    //
    // Routine to send data byte from master to slave
    //
-   // Usage: RAD_PVT(data);
+   // Usage: RAD(data);
    //
-   task RAD_PVT;
+   task RAD;
       input [7:0] data;
       begin
          instruction <= "RAD ";
-         tx_data_bit_PVT(data[7]);
-         tx_data_bit_PVT(data[6]);
-         tx_data_bit_PVT(data[5]);
-         tx_data_bit_PVT(data[4]);
-         tx_data_bit_PVT(data[3]);
-         tx_data_bit_PVT(data[2]);
-         tx_data_bit_PVT(data[1]);
-         tx_data_bit_PVT(data[0]);
+         tx_data_bit(data[7]);
+         tx_data_bit(data[6]);
+         tx_data_bit(data[5]);
+         tx_data_bit(data[4]);
+         tx_data_bit(data[3]);
+         tx_data_bit(data[2]);
+         tx_data_bit(data[1]);
+         tx_data_bit(data[0]);
          instruction <= "NULL";
          reg_addr = data;
       end
@@ -678,20 +678,20 @@ module master_i2c
    //
    // Routine to send data byte from master to slave
    //
-   // Usage: DWR_PVT(data);
+   // Usage: DWR(data);
    //
-   task DWR_PVT;
+   task DWR;
       input [7:0] data;
       begin
          instruction <= "DWR ";
-         tx_data_bit_PVT(data[7]);
-         tx_data_bit_PVT(data[6]);
-         tx_data_bit_PVT(data[5]);
-         tx_data_bit_PVT(data[4]);
-         tx_data_bit_PVT(data[3]);
-         tx_data_bit_PVT(data[2]);
-         tx_data_bit_PVT(data[1]);
-         tx_data_bit_PVT(data[0]);
+         tx_data_bit(data[7]);
+         tx_data_bit(data[6]);
+         tx_data_bit(data[5]);
+         tx_data_bit(data[4]);
+         tx_data_bit(data[3]);
+         tx_data_bit(data[2]);
+         tx_data_bit(data[1]);
+         tx_data_bit(data[0]);
          instruction <= "NULL";
       end
    endtask
@@ -699,27 +699,27 @@ module master_i2c
    //
    // Routine to receive data byte at master
    //
-   // Usage: DRD_PVT;
+   // Usage: DRD;
    //
-   task DRD_PVT;
+   task DRD;
       input [7:0] exp_data;
       begin
          instruction <= "DRD ";
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[7] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[6] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[5] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[4] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[3] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[2] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[1] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[0] = data_bit;
          instruction = "NULL";
          
@@ -730,27 +730,27 @@ module master_i2c
    //
    // Routine to receive data byte at master
    //
-   // Usage: DRD_PVT;
+   // Usage: DRD;
    //
-   task DGT_PVT;
+   task DGT;
       output [7:0] exp_data;
       begin
          instruction <= "DRD ";
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[7] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[6] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[5] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[4] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[3] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[2] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[1] = data_bit;
-         rx_data_bit_PVT;
+         rx_data_bit;
          rx_data_byte[0] = data_bit;
          instruction = "NULL";
          exp_data = rx_data_byte;
