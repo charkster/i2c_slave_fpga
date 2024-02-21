@@ -206,20 +206,6 @@ module master_i2c
          SACK; // should be SNACK once that exists
       end
    endtask
-
-   task i2c_write_data;
-      input [7:0] data;
-      input       stop;
-      begin
-         reg_addr = reg_addr+1;
-         if(verbosity > 1)begin
-            $sformat(mstr,"Wr DevID %0h addr %0h data %0h",dev_addr,reg_addr,data);
-         end
-         DWR(data);
-         SACK;
-         if (stop) STO;
-       end
-    endtask
      
    task i2c_write_no_stop;
       input [6:0] i2c_slave_addr;
