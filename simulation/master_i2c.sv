@@ -325,18 +325,6 @@ module master_i2c
       end
    endtask
 
-   task i2c_hs_read_no_stop;
-      input  [6:0] i2c_slave_addr;
-      input  [7:0] addr;
-      output [7:0] data;
-     
-      begin
-         i2c_hs_seq;
-         i2c_read_no_stop(i2c_slave_addr, addr, data);
-         MACK;
-      end
-   endtask
-
    task i2c_hs_read;
       input  [6:0] i2c_slave_addr;
       input  [7:0] addr;
