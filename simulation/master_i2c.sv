@@ -269,29 +269,6 @@ module master_i2c
        end
    endtask
 
-   // Checks for NO ACKS.
-   // Intended to check that when device id
-   // is incorrect there is no response
-   task i2c_write_no_slave;
-      input [6:0] i2c_slave_addr;
-      input [7:0] addr;
-      input [7:0] data;
-
-      begin
-         if(verbosity > 1)begin
-            $sformat(mstr,"Wr DevID %0h addr %0h data %0h",i2c_slave_addr,addr,data);
-         end
-         STA;
-         AWR(i2c_slave_addr);
-         SnACK;
-         RAD(addr);
-         SnACK;
-         DWR(data);
-         SnACK;
-         STO;
-      end
-   endtask // i2c_write
-
    task i2c_read_no_stop;
       input  [6:0] i2c_slave_addr;
       input  [7:0] addr;
