@@ -94,7 +94,7 @@ module i2c_slave
          end
       end
 
-   // it is very important to check when the st_bit_counter is equal to 8!!!!
+   // it is very important to check when the bit_counter is equal to 8!!!!
    always_ff @(posedge scl, negedge rst_start_stop_n)
      if (!rst_start_stop_n)                                                      valid_id <= 1'b0;
      else if (check_id && (bit_counter == 4'd8) && (shift_reg[6:0] == SLAVE_ID)) valid_id <= 1'b1;
