@@ -22,31 +22,30 @@ module i2c_slave
 
    logic       start;
    logic       stop;
-   logic [3:0] bit_cnt;
-   logic       st_id_det;
+   logic [3:0] bit_counter;
+   logic       check_id;
    logic       rst_start_stop_n;
-   logic       rst_stop_n;
-   logic       idle;            
-   logic       bit_cnt9;
+   logic       rst_stop_n;           
+   logic       bit_count_eq_9;
    logic       valid_id;
    logic       rst_start_n;                 
-   logic       start_tgl;
-   logic       start_hold;
-   logic [7:0] data_sr;
+   logic       start_detect;
+   logic       start_detect_hold;
+   logic [7:0] shift_reg;
    logic       wdata_ready;
    logic       next_data_is_addr;
    logic       multi_cycle;
 
    always_ff @(negedge sda_in, negedge rst_n)
-     if (!rst_n) start_tgl <= 1'b0;
-     else        start_tgl <= start_tgl ^ scl;
+     if (!rst_n) start_detect <= 1'b0;
+     else        start_detect <= start_detect ^ scl;
 
    always_ff @(posedge scl, negedge rst_n)
-     if (!rst_n) start_hold <= 1'b0;
-     else        start_hold <= start_tgl;
+     if (!rst_n) start_detect_hold <= 1'b0;
+     else        start_detect_hold <= start_detect;
 
    // falling SDA when SCL is high, cleaned up with flops
-   assign start = start_tgl ^ start_hold;
+   assign start = start_detect ^ start_detect_hold;
 
    // combined reset and scl only used for STOP condition clearing
    assign rst_start_n = rst_n & scl;
@@ -64,18 +63,18 @@ module i2c_slave
       else if (start) i2c_active <= 1'b1;
       else            i2c_active <= 1'b0;
 
-   assign bit_cnt9 = (bit_cnt == 4'd9);
+   assign bit_count_eq_9 = (bit_counter == 4'd9);
 
    always_ff @(posedge scl, negedge rst_start_stop_n)
-      if (!rst_start_stop_n) bit_cnt <= 4'd2; // extra cycle from delayed reset
-      else if (idle)         bit_cnt <= 4'd0;
-      else if (bit_cnt9)     bit_cnt <= 4'd1;
-      else                   bit_cnt <= bit_cnt + 4'd1;
+      if (!rst_start_stop_n)                        bit_counter <= 4'd2; // extra cycle from delayed reset
+      else if ((!check_id) && (!wr_en) && (!rd_en)) bit_counter <= 4'd0;
+      else if (bit_count_eq_9)                      bit_counter <= 4'd1;
+      else                                          bit_counter <= bit_counter + 4'd1;
 
    always_ff @(posedge scl, negedge rst_stop_n, posedge start) 
-      if (!rst_stop_n)   st_id_det <= 1'b0;
-      else if (start)    st_id_det <= 1'b1;
-      else if (bit_cnt9) st_id_det <= 1'b0;
+      if (!rst_stop_n)         check_id <= 1'b0;
+      else if (start)          check_id <= 1'b1;
+      else if (bit_count_eq_9) check_id <= 1'b0;
 
    // Sets the write or read state flags depending on what is received during
    // the 8th data bit of the Slave ID field. Otherwise they reset if there is a NACK.
@@ -84,44 +83,43 @@ module i2c_slave
          wr_en  <= 1'b0;
          rd_en  <= 1'b0;
       end
-      else if (bit_cnt9) begin
+      else if (bit_count_eq_9) begin
          if (sda_in == P_NACK) begin
             wr_en  <= 1'b0;
             rd_en  <= 1'b0;
          end
-         else if (valid_id && st_id_det) begin
-            wr_en <= ~data_sr[0];
-            rd_en <=  data_sr[0];
+         else if (valid_id && check_id) begin
+            wr_en <= ~shift_reg[0];
+            rd_en <=  shift_reg[0];
          end
       end
-   
-   assign idle = (!st_id_det) && (!wr_en) && (!rd_en);
 
-   // it is very important to check when the st_bit_cnt is equal to 8!!!!
+   // it is very important to check when the st_bit_counter is equal to 8!!!!
    always_ff @(posedge scl, negedge rst_start_stop_n)
-     if (!rst_start_stop_n)  valid_id <= 1'b0;
-     else                    valid_id <= st_id_det && (bit_cnt == 4'd8) && (data_sr[6:0] == SLAVE_ID);
+     if (!rst_start_stop_n)                                                      valid_id <= 1'b0;
+     else if (check_id && (bit_counter == 4'd8) && (shift_reg[6:0] == SLAVE_ID)) valid_id <= 1'b1;
+     else                                                                        valid_id <= 1'b0;
 
    always_ff @(posedge scl, negedge rst_n)
-      if (!rst_n)                                                        data_sr <= 8'b0000_0000;
-      else if ((data_sr[0] && valid_id) || (rd_en && (bit_cnt == 4'd9))) data_sr <= rdata;
-      else                                                               data_sr <= {data_sr[6:0], sda_in};
+      if (!rst_n)                                                       shift_reg <= 8'b0000_0000;
+      else if ((shift_reg[0] && valid_id) || (rd_en && bit_count_eq_9)) shift_reg <= rdata;
+      else                                                              shift_reg <= {shift_reg[6:0], sda_in};
 
    // Registered data out. It only outputs data whenever
    //   a) we ACK a correct Slave ID
    //   b) we ACK the receipt of a data byte
    //   b) we are in read mode and outputting data, except during the Master ACK/NACK
    always_ff @(negedge scl, negedge rst_n)
-     if (!rst_n)                                 sda_out <= P_NACK;
-     else if ( (bit_cnt9  && wr_en) || valid_id) sda_out <= P_ACK;
-     else if ((!bit_cnt9) && rd_en)              sda_out <= data_sr[7];
-     else                                        sda_out <= P_NACK;
+     if (!rst_n)                                       sda_out <= P_NACK;
+     else if ( (bit_count_eq_9  && wr_en) || valid_id) sda_out <= P_ACK;
+     else if ((!bit_count_eq_9) && rd_en)              sda_out <= shift_reg[7];
+     else                                              sda_out <= P_NACK;
 
   // THE FOLLOWING CODE IS NOT PART OF THE I2C_SLAVE, but is custom for the regmap
   // it is convenient to put it here, it assumes a single byte address
   // auto-incrementing address for multi-byte reads and writes.
 
-  assign wdata_ready = wr_en && bit_cnt9;
+  assign wdata_ready = wr_en && bit_count_eq_9;
    
    // the first data in a write cycle is the address, all following is write data
    always_ff @(posedge scl, negedge rst_n)
@@ -130,9 +128,9 @@ module i2c_slave
       else if (wdata_ready) next_data_is_addr <= 1'b0;
    
    always_ff @(posedge scl, negedge rst_n)
-      if (!rst_n)                                                    multi_cycle <= 1'b0;
-      else if (start)                                                multi_cycle <= 1'b0;
-      else if (rd_en || (wr_en && bit_cnt9 && (!next_data_is_addr))) multi_cycle <= 1'b1;
+      if (!rst_n)                                                          multi_cycle <= 1'b0;
+      else if (start)                                                      multi_cycle <= 1'b0;
+      else if (rd_en || (wr_en && bit_count_eq_9 && (!next_data_is_addr))) multi_cycle <= 1'b1;
    
    // this pulse signals that wdata is stable
    always_ff @(posedge scl, negedge rst_n)
@@ -140,13 +138,13 @@ module i2c_slave
       else                  wr_en_wdata <= wdata_ready && (~next_data_is_addr);
     
    always_ff @(posedge scl, negedge rst_n)
-      if (!rst_n)                                addr <= 8'd0;
-      else if (wdata_ready && next_data_is_addr) addr <= data_sr[7:0];
-      else if ((bit_cnt == 4'd8) && multi_cycle) addr <= addr + 'd1;
+      if (!rst_n)                                    addr <= 8'd0;
+      else if (wdata_ready && next_data_is_addr)     addr <= shift_reg[7:0];
+      else if ((bit_counter == 4'd8) && multi_cycle) addr <= addr + 'd1;
    
    // 
    always_ff @(posedge scl, negedge rst_n)
       if (!rst_n)                                   wdata <= 8'd0;
-      else if (wdata_ready && (!next_data_is_addr)) wdata <= data_sr[7:0];
+      else if (wdata_ready && (!next_data_is_addr)) wdata <= shift_reg[7:0];
 
 endmodule
