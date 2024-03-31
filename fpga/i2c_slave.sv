@@ -38,14 +38,14 @@ module i2c_slave
 
    always_ff @(negedge sda_in, negedge rst_n)
      if (!rst_n) start_detect <= 1'b0;
-     else        start_detect <= start_detect ^ scl;
+     else        start_detect <= scl;
 
    always_ff @(posedge scl, negedge rst_n)
      if (!rst_n) start_detect_hold <= 1'b0;
      else        start_detect_hold <= start_detect;
 
-   // falling SDA when SCL is high, cleaned up with flops
-   assign start = start_detect ^ start_detect_hold;
+   // rising edge detect
+   assign start = start_detect && (!start_detect_hold);
 
    // combined reset and scl only used for STOP condition clearing
    assign rst_start_n = rst_n & scl;
@@ -83,16 +83,14 @@ module i2c_slave
          wr_en  <= 1'b0;
          rd_en  <= 1'b0;
       end
-      else if (bit_count_eq_9) begin
-         if (sda_in == P_NACK) begin
-            wr_en  <= 1'b0;
-            rd_en  <= 1'b0;
-         end
-         else if (valid_id && check_id) begin
-            wr_en <= ~shift_reg[0];
-            rd_en <=  shift_reg[0];
-         end
-      end
+     else if (bit_count_eq_9 && valid_id && check_id) begin
+         wr_en <= ~shift_reg[0];
+         rd_en <=  shift_reg[0];
+     end
+     else if (bit_count_eq_9 && (sda_in == P_NACK)) begin
+         wr_en  <= 1'b0;
+         rd_en  <= 1'b0;
+     end
 
    // it is very important to check when the bit_counter is equal to 8!!!!
    always_ff @(posedge scl, negedge rst_start_stop_n)
