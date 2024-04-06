@@ -32,13 +32,7 @@ module i2c_master
    reg [(256*8)-1:0] i2c_mode_i;
    reg [(256*8)-1:0] scl_min_i;
 
-   // I2S High Speed (Hs) Enable
-   integer bus_cap = 100; //pF Capacitance
-   
-   // Flag for assertion to monitor highspeed
-   reg sending_hs_master_code = 0;
-   reg sending_start          = 0;
-   reg high_speed             = 0;
+   reg high_speed = 0;
 
    /////////////////////////////////////////////////// Tasks for initialization of I2C Master ///
 
