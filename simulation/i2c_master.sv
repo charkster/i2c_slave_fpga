@@ -762,12 +762,12 @@ module i2c_master
    //
    // Routine to receive data byte at master
    //
-   // Usage: DRD;
+   // Usage: DGT;
    //
    task DGT;
       output [7:0] exp_data;
       begin
-         instruction <= "DRD ";
+         instruction <= "DGT ";
          rx_data_bit;
          rx_data_byte[7] = data_bit;
          rx_data_bit;
