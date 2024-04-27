@@ -58,10 +58,11 @@ module i2c_slave
    assign rst_stop_n       = (rst_n & (~stop));
    assign rst_start_stop_n = (rst_n & (~start) & (~stop));
 
+   // asynchronous, glitch-free i2c_active indicator
    always_ff @(posedge stop, negedge rst_n or posedge start)
-      if (!rst_n)     i2c_active <= 1'b0;
-      else if (start) i2c_active <= 1'b1;
-      else            i2c_active <= 1'b0;
+     if (!rst_n)      i2c_active <= 1'b0;
+      else if (start) i2c_active <= 1'b1; // posedge start
+      else            i2c_active <= 1'b0; // posedge stop
 
    assign bit_count_eq_9 = (bit_counter == 4'd9);
 
@@ -76,6 +77,12 @@ module i2c_slave
       else if (start)          check_id <= 1'b1;
       else if (bit_count_eq_9) check_id <= 1'b0;
 
+   // it is very important to check when the bit_counter is equal to 8!!!!
+   always_ff @(posedge scl, negedge rst_start_stop_n)
+     if (!rst_start_stop_n)                                                      valid_id <= 1'b0;
+     else if (check_id && (bit_counter == 4'd8) && (shift_reg[6:0] == SLAVE_ID)) valid_id <= 1'b1;
+     else                                                                        valid_id <= 1'b0;
+  
    // Sets the write or read state flags depending on what is received during
    // the 8th data bit of the Slave ID field. Otherwise they reset if there is a NACK.
    always_ff @(posedge scl or negedge rst_start_stop_n)
@@ -91,12 +98,6 @@ module i2c_slave
          wr_en  <= 1'b0;
          rd_en  <= 1'b0;
      end
-
-   // it is very important to check when the bit_counter is equal to 8!!!!
-   always_ff @(posedge scl, negedge rst_start_stop_n)
-     if (!rst_start_stop_n)                                                      valid_id <= 1'b0;
-     else if (check_id && (bit_counter == 4'd8) && (shift_reg[6:0] == SLAVE_ID)) valid_id <= 1'b1;
-     else                                                                        valid_id <= 1'b0;
 
    always_ff @(posedge scl, negedge rst_n)
       if (!rst_n)                                                       shift_reg <= 8'b0000_0000;
