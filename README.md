@@ -5,3 +5,5 @@ I have tasks to emulate the I2C master which allows the testbench to be very hig
 This slave implementation has been tested with FT4222 and Raspberry Pi I2C masters.
 
 I wanted to make a simple framework for future projects that require an I2C interface. Feel free to take as much or as little of the code as you want.
+
+Added a timer to reset the I2C slave interface if SDA gets stuck low.
